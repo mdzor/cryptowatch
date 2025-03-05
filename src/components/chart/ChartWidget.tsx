@@ -7,18 +7,23 @@ import { TradingPair } from '../../types/market';
 import TradingViewChart from './TradingViewChart';
 import OrderBook from '../market/OrderBook';
 
+// Import the TimeFrame type or define it here
+type TimeFrame = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w';
+
 interface ChartWidgetProps {
   pair: TradingPair;
   showOrderbook: boolean;
   onToggleOrderbook: () => void;
   onRemove: () => void;
+  timeFrame?: TimeFrame;
 }
 
 const ChartWidget: React.FC<ChartWidgetProps> = ({
   pair,
   showOrderbook,
   onToggleOrderbook,
-  onRemove
+  onRemove,
+  timeFrame = '1h'
 }) => {
   // State for the orderbook width (default 30%)
   const [orderbookWidth, setOrderbookWidth] = useState(30);
@@ -184,7 +189,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
             transition: isDraggingRef.current ? 'none' : 'width 0.1s ease',
           }}
         >
-          <TradingViewChart pair={pair} />
+          <TradingViewChart pair={pair} timeFrame={timeFrame} />
         </Box>
       </CardContent>
     </Card>

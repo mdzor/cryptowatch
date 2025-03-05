@@ -5,13 +5,10 @@ import {
   Switch, FormControlLabel, Divider, Badge
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import LightModeIcon from '@mui/icons-material/LightMode';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import SaveIcon from '@mui/icons-material/Save';
-import RestoreIcon from '@mui/icons-material/Restore';
-import BugReportIcon from '@mui/icons-material/BugReport';
+import PaletteIcon from '@mui/icons-material/Palette';
 import { TradingPair } from '../../types/market';
+import { useTheme } from '../../context/ThemeContext';
 
 interface HeaderProps {
   children?: React.ReactNode;
@@ -32,7 +29,8 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [settingsMenuAnchor, setSettingsMenuAnchor] = useState<null | HTMLElement>(null);
-  const [darkMode, setDarkMode] = useState(true);
+  const [themeMenuAnchor, setThemeMenuAnchor] = useState<null | HTMLElement>(null);
+  const { selectedTheme, setSelectedTheme, themeData } = useTheme();
 
   const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(event.currentTarget);
@@ -50,17 +48,17 @@ const Header: React.FC<HeaderProps> = ({
     setSettingsMenuAnchor(null);
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    handleSettingsMenuClose();
+  const handleThemeMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setThemeMenuAnchor(event.currentTarget);
   };
 
-  const handleSaveLayout = () => {
-    console.log('Layout saved');
+  const handleThemeMenuClose = () => {
+    setThemeMenuAnchor(null);
   };
 
-  const handleLoadLayout = () => {
-    console.log('Layout loaded');
+  const handleThemeChange = (theme: string) => {
+    setSelectedTheme(theme as any);
+    handleThemeMenuClose();
   };
 
   return (
@@ -76,27 +74,25 @@ const Header: React.FC<HeaderProps> = ({
         
         <Box sx={{ flexGrow: 1 }} />
         
-        <Button 
-          startIcon={<SaveIcon />} 
-          size="small" 
-          onClick={handleSaveLayout}
-          sx={{ mr: 1 }}
-        >
-          Save Layout
-        </Button>
-        
-        <Button 
-          startIcon={<RestoreIcon />} 
-          size="small" 
-          onClick={handleLoadLayout}
-          sx={{ mr: 2 }}
-        >
-          Load Layout
-        </Button>
-        
-        <IconButton onClick={toggleDarkMode} sx={{ mr: 1 }}>
-          {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
+        {/* Theme Menu */}
+        <IconButton onClick={handleThemeMenuOpen} sx={{ mr: 1 }}>
+          <PaletteIcon />
         </IconButton>
+        <Menu
+          anchorEl={themeMenuAnchor}
+          open={Boolean(themeMenuAnchor)}
+          onClose={handleThemeMenuClose}
+        >
+          {Object.entries(themeData).map(([key, theme]) => (
+            <MenuItem 
+              key={key} 
+              onClick={() => handleThemeChange(key)}
+              selected={selectedTheme === key}
+            >
+              {theme.name}
+            </MenuItem>
+          ))}
+        </Menu>
         
         <IconButton onClick={handleSettingsMenuOpen} sx={{ mr: 1 }}>
           <SettingsIcon />
@@ -106,9 +102,6 @@ const Header: React.FC<HeaderProps> = ({
           open={Boolean(settingsMenuAnchor)}
           onClose={handleSettingsMenuClose}
         >
-          <MenuItem onClick={toggleDarkMode}>Toggle Dark Mode</MenuItem>
-          <MenuItem onClick={handleSaveLayout}>Save Layout</MenuItem>
-          <MenuItem onClick={handleLoadLayout}>Load Layout</MenuItem>
           <MenuItem onClick={() => {
             handleSettingsMenuClose();
             if (onToggleDebugTools) onToggleDebugTools();

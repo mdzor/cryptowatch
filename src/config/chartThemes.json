@@ -1,0 +1,122 @@
+{
+  "greyDark": {
+    "name": "Grey Dark",
+    "layout": {
+      "background": "transparent",
+      "textColor": "#d1d4dc"
+    },
+    "grid": {
+      "vertLines": "rgba(42, 46, 57, 0.5)",
+      "horzLines": "rgba(42, 46, 57, 0.5)"
+    },
+    "timeScale": {
+      "borderColor": "rgba(197, 203, 206, 0.8)"
+    },
+    "candles": {
+      "upColor": "#26a69a",
+      "downColor": "#ef5350",
+      "wickUpColor": "#26a69a",
+      "wickDownColor": "#ef5350"
+    }
+  },
+  "black": {
+    "name": "Black",
+    "layout": {
+      "background": "#000000",
+      "textColor": "#ffffff"
+    },
+    "grid": {
+      "vertLines": "rgba(70, 70, 70, 0.5)",
+      "horzLines": "rgba(70, 70, 70, 0.5)"
+    },
+    "timeScale": {
+      "borderColor": "rgba(100, 100, 100, 0.8)"
+    },
+    "candles": {
+      "upColor": "#00ff00",
+      "downColor": "#ff0000",
+      "wickUpColor": "#00ff00",
+      "wickDownColor": "#ff0000"
+    }
+  },
+  "dracula": {
+    "name": "Dracula",
+    "layout": {
+      "background": "#282a36",
+      "textColor": "#f8f8f2"
+    },
+    "grid": {
+      "vertLines": "rgba(68, 71, 90, 0.5)",
+      "horzLines": "rgba(68, 71, 90, 0.5)"
+    },
+    "timeScale": {
+      "borderColor": "rgba(98, 114, 164, 0.8)"
+    },
+    "candles": {
+      "upColor": "#50fa7b",
+      "downColor": "#ff5555",
+      "wickUpColor": "#50fa7b",
+      "wickDownColor": "#ff5555"
+    }
+  },
+  "monokai": {
+    "name": "Monokai",
+    "layout": {
+      "background": "#272822",
+      "textColor": "#f8f8f2"
+    },
+    "grid": {
+      "vertLines": "rgba(73, 72, 62, 0.5)",
+      "horzLines": "rgba(73, 72, 62, 0.5)"
+    },
+    "timeScale": {
+      "borderColor": "rgba(117, 113, 94, 0.8)"
+    },
+    "candles": {
+      "upColor": "#a6e22e",
+      "downColor": "#f92672",
+      "wickUpColor": "#a6e22e",
+      "wickDownColor": "#f92672"
+    }
+  },
+  "oneDark": {
+    "name": "One Dark",
+    "layout": {
+      "background": "#282c34",
+      "textColor": "#abb2bf"
+    },
+    "grid": {
+      "vertLines": "rgba(62, 68, 81, 0.5)",
+      "horzLines": "rgba(62, 68, 81, 0.5)"
+    },
+    "timeScale": {
+      "borderColor": "rgba(92, 99, 112, 0.8)"
+    },
+    "candles": {
+      "upColor": "#98c379",
+      "downColor": "#e06c75",
+      "wickUpColor": "#98c379",
+      "wickDownColor": "#e06c75"
+    }
+  },
+  "solarized": {
+    "name": "Solarized",
+    "layout": {
+      "background": "#002b36",
+      "textColor": "#839496"
+    },
+    "grid": {
+      "vertLines": "rgba(7, 54, 66, 0.5)",
+      "horzLines": "rgba(7, 54, 66, 0.5)"
+    },
+    "timeScale": {
+      "borderColor": "rgba(88, 110, 117, 0.8)"
+    },
+    "candles": {
+      "upColor": "#859900",
+      "downColor": "#dc322f",
+      "wickUpColor": "#859900",
+      "wickDownColor": "#dc322f"
+    }
+  }
+} 

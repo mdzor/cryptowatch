@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Box } from '@mui/material';
-import { Button, ButtonGroup } from '@mui/material';
+import { Box, Button, ButtonGroup, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { 
   createChart, 
   IChartApi, 
@@ -19,6 +18,12 @@ import {
 import { TradingPair } from '../../types/market';
 import { useOHLC } from '../../hooks/useOHLC';
 import { useCombinedMarketData } from '../../hooks/useCombinedMarketData';
+import chartThemes from '../../config/chartThemes.json';
+import { ChartTheme, ChartThemes } from '../../types/chartThemes';
+import { useTheme } from '../../context/ThemeContext';
+
+// Ensure proper typing for the JSON import
+const typedChartThemes = chartThemes as ChartThemes;
 
 // Debounce function to prevent too many resize events
 const debounce = (func: Function, wait: number) => {
@@ -68,6 +73,8 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
   const [autoScroll, setAutoScroll] = useState(true);
   const userInteractedRef = useRef(false);
   const isDisposingRef = useRef(false);
+  // Use the theme from context instead of local state
+  const { selectedTheme } = useTheme();
   
   // Use the combined market data hook
   const { 
@@ -263,15 +270,18 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
     try {
       console.log('Initializing chart for', pair.symbol);
       
-      // Create chart
+      // Get current theme
+      const theme = typedChartThemes[selectedTheme];
+      
+      // Create chart with theme
       const chart = createChart(chartContainerRef.current, {
         layout: {
-          background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#d1d4dc',
+          background: { type: ColorType.Solid, color: theme.layout.background },
+          textColor: theme.layout.textColor,
         },
         grid: {
-          vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
-          horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
+          vertLines: { color: theme.grid.vertLines },
+          horzLines: { color: theme.grid.horzLines },
         },
         width: chartContainerRef.current.clientWidth,
         height: chartContainerRef.current.clientHeight,
@@ -279,7 +289,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
           timeVisible: true,
           secondsVisible: true,
           borderVisible: true,
-          borderColor: 'rgba(197, 203, 206, 0.8)',
+          borderColor: theme.timeScale.borderColor,
           rightOffset: 2,
           barSpacing: 10,
           tickMarkFormatter: (time: number, tickMarkType: any, locale: string) => {
@@ -313,11 +323,11 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
       
       // Create candlestick series using the lightweight-charts v5 API
       const candleSeries = chart.addSeries(CandlestickSeries, {
-        upColor: '#26a69a',
-        downColor: '#ef5350',
+        upColor: theme.candles.upColor,
+        downColor: theme.candles.downColor,
         borderVisible: false,
-        wickUpColor: '#26a69a',
-        wickDownColor: '#ef5350',
+        wickUpColor: theme.candles.wickUpColor,
+        wickDownColor: theme.candles.wickDownColor,
       });
       
       // Save references
@@ -376,7 +386,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
     } catch (err) {
       console.error('Error initializing chart:', err);
     }
-  }, [chartInitialized, isDisposingRef, formattedCandles, formattedLastCandle, selectedTimeFrame, pair.symbol]);
+  }, [chartInitialized, isDisposingRef, formattedCandles, formattedLastCandle, selectedTimeFrame, pair.symbol, selectedTheme]);
   
   // Create a function to explicitly refresh data if needed
   const refreshData = useCallback(() => {
@@ -664,7 +674,46 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
     };
   }, [safelyDestroyChart]);
   
-  // Add a button in the UI to manually refresh data if needed
+  // Function to apply the selected theme to the chart
+  const applyTheme = useCallback(() => {
+    if (!chartRef.current) return;
+    
+    const theme = typedChartThemes[selectedTheme];
+    
+    // Apply layout changes
+    chartRef.current.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: theme.layout.background },
+        textColor: theme.layout.textColor,
+      },
+      grid: {
+        vertLines: { color: theme.grid.vertLines },
+        horzLines: { color: theme.grid.horzLines },
+      },
+      timeScale: {
+        borderColor: theme.timeScale.borderColor,
+      },
+    });
+    
+    // Apply candle series changes
+    if (candleSeriesRef.current) {
+      candleSeriesRef.current.applyOptions({
+        upColor: theme.candles.upColor,
+        downColor: theme.candles.downColor,
+        wickUpColor: theme.candles.wickUpColor,
+        wickDownColor: theme.candles.wickDownColor,
+      });
+    }
+  }, [selectedTheme]);
+  
+  // Apply theme when changed
+  useEffect(() => {
+    if (chartInitialized) {
+      applyTheme();
+    }
+  }, [selectedTheme, chartInitialized, applyTheme]);
+  
+  // Remove the renderControls method or simplify it to remove the theme selector
   const renderControls = () => {
     return (
       <Box sx={{ 
@@ -676,7 +725,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
         flexDirection: 'column',
         gap: 1
       }}>
-        {/* Existing buttons */}
+        {/* Existing buttons but remove the theme selector */}
         <ButtonGroup size="small" variant="outlined" aria-label="Chart controls">
           {/* Refresh button removed */}
         </ButtonGroup>

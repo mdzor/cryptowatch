@@ -96,9 +96,11 @@ cryptowatch/
 
 ## TODO List
 
-- [ ] Implement theme management system (ability to change between 3-4 different themes)
+- [x] Implement theme management system (ability to change between 3-4 different themes)
 - [ ] Utilize the usePairs hook to download and retrieve the latest trading pair information
 - [ ] Enhance UI for pair selection with a search functionality for easier access
-- [ ] Add configuration options for adjusting the refresh rate of charts and orderbook data
+- [x] Add configuration options for adjusting the refresh rate of charts and orderbook data
+- [x] Added throttling and subscription to make the frontend less loaded
+- [ ] Add localstorage saving so changes are persistent
 - [ ] Implement toggle controls for showing/hiding TradingView tools on the charts
 
