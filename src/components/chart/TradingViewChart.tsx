@@ -395,8 +395,10 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
             setLastUpdatedCandleTime(formattedLastCandle.time);
           }
           
-          // Auto-scroll to most recent candle
-          if (chartRef.current) {
+          // Only fit content on initial load or for newly added charts
+          // Check if this is the first data load for this chart
+          if (displayedCandleCount === 0 && chartRef.current) {
+            console.log('Initial data load - fitting content to view');
             chartRef.current.timeScale().fitContent();
           }
         } catch (err) {
@@ -404,7 +406,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
         }
       }
     }
-  }, [chartInitialized, formattedCandles, formattedLastCandle]);
+  }, [chartInitialized, formattedCandles, formattedLastCandle, displayedCandleCount]);
 
   // Add an effect to handle pair changes and ensure data refreshes
   useEffect(() => {
@@ -666,22 +668,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
       }}>
         {/* Existing buttons */}
         <ButtonGroup size="small" variant="outlined" aria-label="Chart controls">
-          <Button
-            size="small"
-            onClick={refreshData}
-            sx={{ 
-              fontSize: '0.7rem', 
-              py: 0.25, 
-              color: 'text.secondary',
-              borderColor: 'rgba(255,255,255,0.2)',
-              '&:hover': { 
-                borderColor: 'rgba(255,255,255,0.5)',
-                backgroundColor: 'rgba(255,255,255,0.05)'
-              }
-            }}
-          >
-            Refresh
-          </Button>
+          {/* Refresh button removed */}
         </ButtonGroup>
       </Box>
     );
