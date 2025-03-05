@@ -1,46 +1,104 @@
-# Getting Started with Create React App
+# Cryptowatch
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern cryptocurrency trading dashboard and monitoring platform built with React, TypeScript, and Material UI. This application allows users to track cryptocurrency prices, view real-time charts, and monitor market data across different exchanges.
 
-## Available Scripts
+## Project Overview
 
-In the project directory, you can run:
+Cryptowatch provides a customizable dashboard with draggable and resizable chart widgets. Users can monitor multiple trading pairs simultaneously, check orderbook data, and track market movements in real-time through WebSocket connections.
 
-### `npm start`
+### Key Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- **Real-time price charts** for various cryptocurrency pairs
+- **Responsive grid layout** with draggable and resizable widgets
+- **WebSocket integration** for live market data
+- **Dark-themed UI** designed for trading environments
+- **Redux state management** for application-wide state
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## Project Structure
 
-### `npm test`
+```
+cryptowatch/
+├── public/             # Static assets and HTML template
+├── src/                # Application source code
+│   ├── components/     # Reusable UI components
+│   │   ├── chart/      # Chart and trading view components
+│   │   ├── debug/      # Debugging tools and components
+│   │   ├── layout/     # Layout components (header, navigation)
+│   │   ├── market/     # Market data display components
+│   │   └── trading/    # Trading interface components
+│   ├── data/           # Static data and constants
+│   ├── hooks/          # Custom React hooks
+│   ├── pages/          # Page components
+│   ├── services/       # API and WebSocket services
+│   ├── store/          # Redux store configuration
+│   │   └── slices/     # Redux slices for state management
+│   ├── types/          # TypeScript type definitions
+│   └── utils/          # Utility functions
+├── App.tsx             # Main application component
+└── index.tsx           # Application entry point
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Folder Descriptions
 
-### `npm run build`
+- **components/**: Reusable UI components organized by functionality
+  - **chart/**: Chart widgets and visualization tools
+  - **debug/**: Components for debugging and testing WebSocket connections
+  - **layout/**: UI layout components including headers and navigation
+  - **market/**: Components for displaying market data (prices, volume, etc.)
+  - **trading/**: Order placement and trading interface components
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **pages/**: Top-level page components
+  - **Dashboard.tsx**: Main dashboard interface
+  - **DebugWebSocket.tsx**: Page for debugging WebSocket connections
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **services/**: API integrations and data services
+  - **krakenWebSocket.ts**: WebSocket client for Kraken exchange data
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- **store/**: Redux state management
+  - **slices/**: Redux toolkit slices for different state domains
+    - **marketSlice.ts**: Market data state
+    - **layoutSlice.ts**: UI layout configuration
+    - **userSlice.ts**: User preferences and settings
 
-### `npm run eject`
+- **hooks/**: Custom React hooks for shared functionality
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+- **types/**: TypeScript type definitions for the application
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- **utils/**: Helper functions and utilities
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## Getting Started
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Prerequisites
 
-## Learn More
+- Node.js (v14 or higher)
+- npm or yarn
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Installation
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. Clone the repository:
+   ```
+   git clone <repository-url>
+   cd cryptowatch
+   ```
+
+2. Install dependencies:
+   ```
+   npm install
+   ```
+
+3. Start the development server:
+   ```
+   npm start
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) to view the application in your browser.
+
+
+## TODO List
+
+- [ ] Implement theme management system (ability to change between 3-4 different themes)
+- [ ] Utilize the usePairs hook to download and retrieve the latest trading pair information
+- [ ] Enhance UI for pair selection with a search functionality for easier access
+- [ ] Add configuration options for adjusting the refresh rate of charts and orderbook data
+- [ ] Implement toggle controls for showing/hiding TradingView tools on the charts
+
