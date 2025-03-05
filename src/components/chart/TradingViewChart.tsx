@@ -418,6 +418,16 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({ pair, timeFrame = '
     }
   }, [pair.symbol, chartInitialized, refreshData]);
 
+  // Add a specific effect to handle initial chart creation and ensure data renders
+  useEffect(() => {
+    // This effect runs once when chart is first initialized
+    if (chartInitialized && formattedCandles.length > 0) {
+      console.log('Chart newly initialized with data - ensuring data refresh');
+      // Force a refresh after initialization to ensure historical data is displayed
+      setTimeout(refreshData, 500);
+    }
+  }, [chartInitialized]); // Only depend on chartInitialized to run once after initialization
+
   // Update chart candles from data
   useEffect(() => {
     if (!chartInitialized || !candleSeriesRef.current) {
