@@ -138,7 +138,7 @@ const ChartWidget: React.FC<ChartWidgetProps> = ({
                 transition: isDraggingRef.current ? 'none' : 'width 0.1s ease',
               }}
             >
-              <OrderBook pair={pair} />
+              <OrderBook pair={pair} isVisible={showOrderbook} />
             </Box>
             
             {/* Resize divider */}

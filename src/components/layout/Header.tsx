@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   AppBar, Toolbar, Typography, Box, 
   IconButton, Menu, MenuItem, Button,
-  Switch, FormControlLabel, Divider
+  Switch, FormControlLabel, Divider, Badge
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -11,6 +11,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SaveIcon from '@mui/icons-material/Save';
 import RestoreIcon from '@mui/icons-material/Restore';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import { TradingPair } from '../../types/market';
 
 interface HeaderProps {
   children?: React.ReactNode;
@@ -18,6 +19,7 @@ interface HeaderProps {
   onToggleAdvancedDebug?: () => void;
   showDebugTools?: boolean;
   showAdvancedDebug?: boolean;
+  onAddChart?: (pair: TradingPair) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -25,7 +27,8 @@ const Header: React.FC<HeaderProps> = ({
   onToggleDebugTools, 
   onToggleAdvancedDebug, 
   showDebugTools = false, 
-  showAdvancedDebug = false 
+  showAdvancedDebug = false,
+  onAddChart
 }) => {
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [settingsMenuAnchor, setSettingsMenuAnchor] = useState<null | HTMLElement>(null);
@@ -49,27 +52,27 @@ const Header: React.FC<HeaderProps> = ({
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
-    // In a real app, this would trigger a theme change
+    handleSettingsMenuClose();
   };
 
   const handleSaveLayout = () => {
-    // In a real app, this would save the layout to localStorage or a backend
     console.log('Layout saved');
   };
 
   const handleLoadLayout = () => {
-    // In a real app, this would load a saved layout
     console.log('Layout loaded');
   };
 
   return (
-    <AppBar position="static" color="default" elevation={1}>
+    <AppBar position="static" color="default" elevation={1} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
       <Toolbar variant="dense">
         <Typography variant="h6" component="div" sx={{ flexGrow: 0, mr: 2 }}>
           Cryptowatch
         </Typography>
         
-        {children}
+        <Box sx={{ flexGrow: 1 }}>
+          {children}
+        </Box>
         
         <Box sx={{ flexGrow: 1 }} />
         
@@ -103,61 +106,21 @@ const Header: React.FC<HeaderProps> = ({
           open={Boolean(settingsMenuAnchor)}
           onClose={handleSettingsMenuClose}
         >
-          <MenuItem>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={darkMode}
-                  onChange={toggleDarkMode}
-                  size="small"
-                />
-              }
-              label="Dark Mode"
-            />
+          <MenuItem onClick={toggleDarkMode}>Toggle Dark Mode</MenuItem>
+          <MenuItem onClick={handleSaveLayout}>Save Layout</MenuItem>
+          <MenuItem onClick={handleLoadLayout}>Load Layout</MenuItem>
+          <MenuItem onClick={() => {
+            handleSettingsMenuClose();
+            if (onToggleDebugTools) onToggleDebugTools();
+          }}>
+            {showDebugTools ? 'Hide Debug' : 'Show Debug'}
           </MenuItem>
-          <MenuItem onClick={handleSettingsMenuClose}>Chart Settings</MenuItem>
-          <MenuItem onClick={handleSettingsMenuClose}>API Configuration</MenuItem>
-          
-          {onToggleDebugTools && (
-            <>
-              <Divider />
-              <MenuItem>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={showDebugTools}
-                      onChange={onToggleDebugTools}
-                      size="small"
-                      color="error"
-                    />
-                  }
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <BugReportIcon fontSize="small" sx={{ mr: 1, color: 'error.main' }} />
-                      <Typography variant="body2" color="error">Debug Tools</Typography>
-                    </Box>
-                  }
-                />
-              </MenuItem>
-              {onToggleAdvancedDebug && (
-                <MenuItem 
-                  disabled={!showDebugTools}
-                  onClick={onToggleAdvancedDebug}
-                  sx={{ 
-                    pl: 4,
-                    color: showAdvancedDebug ? 'error.main' : 'inherit',
-                    fontWeight: showAdvancedDebug ? 'bold' : 'normal'
-                  }}
-                >
-                  {showAdvancedDebug ? 'Hide Advanced Debug' : 'Advanced Debug'}
-                </MenuItem>
-              )}
-            </>
-          )}
         </Menu>
         
         <IconButton onClick={handleUserMenuOpen}>
-          <AccountCircleIcon />
+          <Badge badgeContent={0} color="secondary">
+            <AccountCircleIcon />
+          </Badge>
         </IconButton>
         <Menu
           anchorEl={userMenuAnchor}
@@ -165,8 +128,7 @@ const Header: React.FC<HeaderProps> = ({
           onClose={handleUserMenuClose}
         >
           <MenuItem onClick={handleUserMenuClose}>Profile</MenuItem>
-          <MenuItem onClick={handleUserMenuClose}>API Keys</MenuItem>
-          <MenuItem onClick={handleUserMenuClose}>Settings</MenuItem>
+          <MenuItem onClick={handleUserMenuClose}>My Account</MenuItem>
           <MenuItem onClick={handleUserMenuClose}>Logout</MenuItem>
         </Menu>
       </Toolbar>

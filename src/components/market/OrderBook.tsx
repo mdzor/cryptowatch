@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
 import { TradingPair } from '../../types/market';
 import { useOrderBook } from '../../hooks/useOrderBook';
@@ -7,6 +7,8 @@ interface OrderBookProps {
   pair: TradingPair;
   // Option to enable price grouping
   priceGrouping?: boolean;
+  // Flag to indicate if the orderbook is visible
+  isVisible?: boolean;
 }
 
 // Track executed orders for visual effects
@@ -26,19 +28,21 @@ interface GroupedOrder {
   percentage: number; // For visualization
 }
 
-const OrderBook: React.FC<OrderBookProps> = ({ pair, priceGrouping = true }) => {
-  const { orderBook, loading, error } = useOrderBook(pair);
+const OrderBook: React.FC<OrderBookProps> = ({ pair, priceGrouping = true, isVisible = true }) => {
+  const { orderBook, loading, error } = useOrderBook(pair, isVisible);
   const { asks, bids } = orderBook;
   const [executedOrders, setExecutedOrders] = useState<ExecutedOrder[]>([]);
   const prevAsksRef = useRef<any[]>([]);
   const prevBidsRef = useRef<any[]>([]);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const renderCountRef = useRef(0);
+  const lastRenderTimeRef = useRef(Date.now());
   
   // Number of visible price levels on each side
   const visibleLevels = 15;
 
   // Format numbers for display
-  const formatNumber = (num: number) => {
+  const formatNumber = useCallback((num: number) => {
     if (num >= 1000) {
       return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
     }
@@ -48,10 +52,10 @@ const OrderBook: React.FC<OrderBookProps> = ({ pair, priceGrouping = true }) => 
     }
     
     return num.toFixed(4);
-  };
+  }, []);
 
   // Calculate the price grouping factor based on the current price range
-  const calculateGroupingFactor = (data: any[], defaultFactor = 0.1) => {
+  const calculateGroupingFactor = useCallback((data: any[], defaultFactor = 0.1) => {
     if (!data || data.length < 2) return defaultFactor;
     
     // Get the price range
@@ -66,10 +70,10 @@ const OrderBook: React.FC<OrderBookProps> = ({ pair, priceGrouping = true }) => 
     if (range < 100) return 1;   // Larger range - whole points
     if (range < 1000) return 10; // Very large range - ten point increments
     return 100;                  // Extreme range - hundred point increments
-  };
+  }, []);
 
   // Group orders by price levels
-  const groupOrders = (orders: any[], groupingFactor: number, isAsk: boolean): GroupedOrder[] => {
+  const groupOrders = useCallback((orders: any[], groupingFactor: number, isAsk: boolean): GroupedOrder[] => {
     if (!orders || orders.length === 0) return [];
     
     const grouped: Record<string, GroupedOrder> = {};
@@ -125,10 +129,52 @@ const OrderBook: React.FC<OrderBookProps> = ({ pair, priceGrouping = true }) => 
     });
     
     return result;
-  };
+  }, [visibleLevels]);
 
-  // Process and group the order book data
+  // Throttle rendering to prevent too many updates
+  const shouldRender = useCallback(() => {
+    const now = Date.now();
+    const elapsed = now - lastRenderTimeRef.current;
+    
+    // Calculate render throttle based on the size of updates and device performance
+    // More intense data = lower frequency updates
+    const itemCount = (asks?.length || 0) + (bids?.length || 0);
+    
+    // Base throttle of 100ms
+    let throttleTime = 100;
+    
+    // Increase throttle for larger datasets
+    if (itemCount > 200) throttleTime = 250;
+    if (itemCount > 500) throttleTime = 500;
+    
+    // If we're within throttle period, skip this render
+    if (elapsed < throttleTime) {
+      return false;
+    }
+    
+    // Update last render time
+    lastRenderTimeRef.current = now;
+    renderCountRef.current++;
+    
+    // If not visible, render less frequently (every 5th update)
+    if (!isVisible && renderCountRef.current % 5 !== 0) {
+      return false;
+    }
+    
+    return true;
+  }, [asks, bids, isVisible]);
+
+  // Process and group the order book data with throttling
   const processedOrderBook = useMemo(() => {
+    // Skip processing if we shouldn't render
+    if (!shouldRender()) {
+      // Return the previous result
+      return {
+        groupedAsks: prevAsksRef.current || [],
+        groupedBids: prevBidsRef.current || []
+      };
+    }
+    
     // Calculate grouping factors
     const askGroupingFactor = priceGrouping ? calculateGroupingFactor(asks) : 0;
     const bidGroupingFactor = priceGrouping ? calculateGroupingFactor(bids) : 0;
@@ -169,8 +215,12 @@ const OrderBook: React.FC<OrderBookProps> = ({ pair, priceGrouping = true }) => 
     // Reverse the groupedAsks so lower prices are at the top (highest prices at bottom)
     const reversedAsks = [...groupedAsks].reverse();
     
+    // Store the current result for next time
+    prevAsksRef.current = reversedAsks;
+    prevBidsRef.current = groupedBids;
+    
     return { groupedAsks: reversedAsks, groupedBids };
-  }, [asks, bids, priceGrouping, visibleLevels]);
+  }, [asks, bids, priceGrouping, visibleLevels, groupOrders, calculateGroupingFactor, shouldRender]);
   
   // Track order changes to show execution effects
   useEffect(() => {

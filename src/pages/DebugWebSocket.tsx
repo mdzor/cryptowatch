@@ -1,7 +1,8 @@
 import React from 'react';
-import { Typography, Container, Box, Divider, Tabs, Tab } from '@mui/material';
+import { Typography, Container, Box, Divider, Tabs, Tab, Button } from '@mui/material';
 import WebSocketDebugger from '../components/debug/WebSocketDebugger';
 import ApiTester from '../components/debug/ApiTester';
+import subscriptionManager from '../services/SubscriptionManager';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -36,6 +37,12 @@ const DebugWebSocket: React.FC = () => {
     setTabValue(newValue);
   };
 
+  // Add subscription debugging functionality
+  const handleDebugSubscriptions = () => {
+    console.log('Current active subscriptions:');
+    subscriptionManager.debugSubscriptions();
+  };
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
@@ -46,6 +53,21 @@ const DebugWebSocket: React.FC = () => {
         <Typography variant="body1" paragraph>
           This page provides tools for diagnosing WebSocket and REST API issues with the Kraken API.
         </Typography>
+        
+        {/* Add subscription debugging button */}
+        <Box sx={{ my: 2, display: 'flex', alignItems: 'center' }}>
+          <Button 
+            variant="outlined" 
+            color="warning" 
+            onClick={handleDebugSubscriptions}
+            sx={{ mr: 2 }}
+          >
+            Debug Active Subscriptions
+          </Button>
+          <Typography variant="caption" color="text.secondary">
+            Shows subscription status in console
+          </Typography>
+        </Box>
         
         <Divider sx={{ my: 3 }} />
         

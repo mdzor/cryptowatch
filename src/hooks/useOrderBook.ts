@@ -2,14 +2,23 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { TradingPair, OrderBookEntry } from '../types/market';
 import krakenWebSocket from '../services/krakenWebSocket';
 import krakenPairsData from '../data/krakenPairs.json';
+import subscriptionManager from '../services/SubscriptionManager';
 
-export const useOrderBook = (pair: TradingPair) => {
+export const useOrderBook = (pair: TradingPair, isVisible: boolean = true) => {
   const [orderBook, setOrderBook] = useState<{ asks: OrderBookEntry[], bids: OrderBookEntry[] }>({ asks: [], bids: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const wsConnectionAttempted = useRef(false);
   const lastFetchTimeRef = useRef<number>(0);
-
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const prevVisibleRef = useRef(isVisible);
+  const lastUpdateTimeRef = useRef<number>(0);
+  const pendingUpdateRef = useRef<any>(null);
+  const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Base throttle interval in ms
+  const throttleInterval = useRef(100);
+  
   // Function to fetch the order book via REST API
   const fetchOrderBook = useCallback(async () => {
     try {
@@ -140,51 +149,38 @@ export const useOrderBook = (pair: TradingPair) => {
     }
   }, [pair]);
 
-  useEffect(() => {
-    // Reset state when pair changes
-    setLoading(true);
-    setError(null);
-    wsConnectionAttempted.current = false;
-    lastFetchTimeRef.current = 0;
+  // Throttled state updater
+  const throttledUpdateState = useCallback((data: any) => {
+    // Store the pending update
+    pendingUpdateRef.current = data;
     
-    // First fetch immediately for fast initial data
-    fetchOrderBook();
+    // If we already have a timer running, don't create a new one
+    if (throttleTimerRef.current) return;
     
-    // Set up polling as a fallback (every 2 seconds)
-    const pollInterval = setInterval(fetchOrderBook, 2000);
+    // Calculate time until next update
+    const now = Date.now();
+    const elapsed = now - lastUpdateTimeRef.current;
+    const delay = Math.max(0, throttleInterval.current - elapsed);
     
-    const handleOrderBookUpdate = (data: any) => {
+    // Create a timer to update state after delay
+    throttleTimerRef.current = setTimeout(() => {
+      // Get the latest pending data
+      const pendingData = pendingUpdateRef.current;
+      if (!pendingData) return;
+      
+      // Update state with the latest data
       try {
-        // Check if this message is for our pair
-        if (Array.isArray(data) && data.length >= 2) {
-          const pairInfo = data.find(item => item && typeof item === 'object' && '_pair' in item);
-          if (pairInfo) {
-            const messagePair = pairInfo._pair;
-            
-            // Convert the current pair to Kraken format for comparison
-            const formatPairForKraken = (krakenWebSocket as any).constructor.formatPairForKraken;
-            const currentPairFormatted = formatPairForKraken ? formatPairForKraken(pair) : `${pair.baseAsset}/${pair.quoteAsset}`;
-            
-            // If this message is not for our pair, ignore it
-            if (messagePair !== currentPairFormatted) {
-              return;
-            }
-          }
-        }
-        
-        // Use the static method to format the order book data
+        // Format the data
         const formatOrderBookData = (krakenWebSocket as any).constructor.formatOrderBookData;
         if (!formatOrderBookData) {
           console.error('formatOrderBookData method not found');
           return;
         }
         
-        const formattedData = formatOrderBookData(data);
-        if (!formattedData) {
-          return;
-        }
+        const formattedData = formatOrderBookData(pendingData);
+        if (!formattedData) return;
         
-        // Update the order book
+        // Update orderBook state with the formatted data
         setOrderBook(prevOrderBook => {
           // Merge with existing data to handle partial updates
           const updatedAsks = [...prevOrderBook.asks];
@@ -248,13 +244,43 @@ export const useOrderBook = (pair: TradingPair) => {
         
         // Mark as no longer loading if we have data
         setLoading(false);
-        
       } catch (err: any) {
-        console.error('Error processing order book update:', err);
+        console.error('Error processing throttled order book update:', err);
       }
-    };
+      
+      // Clear timer and update last update time
+      throttleTimerRef.current = null;
+      lastUpdateTimeRef.current = Date.now();
+      pendingUpdateRef.current = null;
+    }, delay);
+  }, []);
+  
+  // Handler for orderbook updates
+  const handleOrderBookUpdate = useCallback((data: any) => {
+    // Skip processing if component is not visible to reduce CPU usage
+    if (!isVisible) return;
     
-    // Try to set up WebSocket connection
+    // Use throttled update function instead of processing immediately
+    throttledUpdateState(data);
+  }, [isVisible, throttledUpdateState]);
+
+  useEffect(() => {
+    // Reset state when pair changes
+    setLoading(true);
+    setError(null);
+    wsConnectionAttempted.current = false;
+    lastFetchTimeRef.current = 0;
+    
+    // First fetch immediately for fast initial data
+    fetchOrderBook();
+    
+    // Set up polling as a fallback (with reduced frequency when not visible)
+    const pollInterval = setInterval(
+      fetchOrderBook, 
+      isVisible ? 2000 : 5000 // Poll less frequently when not visible
+    );
+    
+    // Try to set up WebSocket connection and subscription
     const setupWebSocket = async () => {
       if (wsConnectionAttempted.current) return;
       
@@ -264,9 +290,6 @@ export const useOrderBook = (pair: TradingPair) => {
         // Connect to WebSocket
         await krakenWebSocket.connect();
         
-        // Register for order book updates
-        krakenWebSocket.on('book', handleOrderBookUpdate);
-        
         // Get the formatPairForKraken function from the constructor
         const formatPairForKraken = (krakenWebSocket.constructor as any).formatPairForKraken;
         if (!formatPairForKraken) {
@@ -274,12 +297,24 @@ export const useOrderBook = (pair: TradingPair) => {
           return;
         }
         
-        // Subscribe to order book
-        const krakenPair = formatPairForKraken(pair);
-        const success = krakenWebSocket.subscribeOrderBook([krakenPair], 25);
-        
-        if (!success) {
-          console.warn('Failed to subscribe to order book via WebSocket - using polling fallback');
+        // Subscribe to order book only if visible
+        if (isVisible) {
+          const krakenPair = formatPairForKraken(pair);
+          
+          // Use the subscription manager instead of direct subscription
+          const success = subscriptionManager.subscribe(
+            'book', 
+            krakenPair, 
+            handleOrderBookUpdate, 
+            25 // depth
+          );
+          
+          if (success) {
+            console.log(`Subscribed to orderbook for ${krakenPair} via manager`);
+            setIsSubscribed(true);
+          } else {
+            console.warn('Failed to subscribe to order book - using polling fallback');
+          }
         }
       } catch (err) {
         console.error('Failed to set up WebSocket for order book:', err);
@@ -293,16 +328,52 @@ export const useOrderBook = (pair: TradingPair) => {
     return () => {
       clearInterval(pollInterval);
       
-      // Get the formatPairForKraken function for clean up
-      const formatPairForKraken = (krakenWebSocket.constructor as any).formatPairForKraken;
-      if (formatPairForKraken) {
-        const krakenPair = formatPairForKraken(pair);
-        // Unsubscribe from WebSocket
-        krakenWebSocket.off('book', handleOrderBookUpdate);
-        krakenWebSocket.unsubscribe('book', [krakenPair]);
+      // Unsubscribe using the subscription manager
+      if (isSubscribed) {
+        const formatPairForKraken = (krakenWebSocket.constructor as any).formatPairForKraken;
+        if (formatPairForKraken) {
+          const krakenPair = formatPairForKraken(pair);
+          console.log(`Unsubscribing from orderbook for ${krakenPair} via manager`);
+          subscriptionManager.unsubscribe('book', krakenPair, handleOrderBookUpdate);
+          setIsSubscribed(false);
+        }
       }
     };
-  }, [pair, fetchOrderBook]);
+  }, [pair, fetchOrderBook, isVisible, handleOrderBookUpdate, isSubscribed]);
+
+  // Handle visibility changes for existing subscriptions
+  useEffect(() => {
+    // Skip if visibility hasn't changed
+    if (prevVisibleRef.current === isVisible) return;
+    
+    // Update previous visibility ref
+    prevVisibleRef.current = isVisible;
+    
+    const formatPairForKraken = (krakenWebSocket.constructor as any).formatPairForKraken;
+    if (!formatPairForKraken) return;
+    
+    const krakenPair = formatPairForKraken(pair);
+    
+    if (isVisible && !isSubscribed) {
+      // Subscribe when becoming visible - use subscription manager
+      console.log(`Subscribing to orderbook for ${krakenPair} after visibility change`);
+      const success = subscriptionManager.subscribe(
+        'book', 
+        krakenPair, 
+        handleOrderBookUpdate, 
+        25 // depth
+      );
+      
+      if (success) {
+        setIsSubscribed(true);
+      }
+    } else if (!isVisible && isSubscribed) {
+      // Unsubscribe when becoming hidden - use subscription manager
+      console.log(`Unsubscribing from orderbook for ${krakenPair} after visibility change`);
+      subscriptionManager.unsubscribe('book', krakenPair, handleOrderBookUpdate);
+      setIsSubscribed(false);
+    }
+  }, [isVisible, isSubscribed, pair, handleOrderBookUpdate]);
 
   return { orderBook, loading, error };
 }; 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, CssBaseline, ThemeProvider, createTheme, Typography, Button } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, CssBaseline, ThemeProvider, createTheme, Typography, Button, AppBar, Toolbar } from '@mui/material';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -10,6 +10,7 @@ import PairSelector from './components/layout/PairSelector';
 import WebSocketTester from './components/debug/WebSocketTester';
 import DebugWebSocket from './pages/DebugWebSocket';
 import { TradingPair } from './types/market';
+import subscriptionManager from './services/SubscriptionManager';
 
 // Create a responsive grid layout
 const ResponsiveGridLayout = WidthProvider(Responsive);
@@ -58,6 +59,19 @@ const App: React.FC = () => {
   });
   const [showDebugTools, setShowDebugTools] = useState(false);
   const [showAdvancedDebug, setShowAdvancedDebug] = useState(false);
+  
+  // Adjust throttle settings based on number of charts
+  useEffect(() => {
+    // More charts = more aggressive throttling
+    const baseThrottleInterval = 100 + (pairs.length * 25); // 100ms base + 25ms per chart
+    const maxThrottleInterval = 300 + (pairs.length * 50);  // 300ms base + 50ms per chart
+    
+    // Configure the subscription manager
+    subscriptionManager.setBaseThrottleInterval(baseThrottleInterval);
+    subscriptionManager.setMaxThrottleInterval(maxThrottleInterval);
+    
+    console.log(`Configured throttling: base=${baseThrottleInterval}ms, max=${maxThrottleInterval}ms for ${pairs.length} charts`);
+  }, [pairs.length]);
 
   // Handle layout changes
   const handleLayoutChange = (currentLayout: any, allLayouts: any) => {
